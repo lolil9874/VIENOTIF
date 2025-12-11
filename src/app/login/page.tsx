@@ -31,23 +31,31 @@ export default function LoginPage() {
 
       if (error) {
         console.error("Login error:", error);
+        console.error("Error details:", {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        });
+        
         if (error.message.includes("Invalid login credentials") || error.message.includes("Invalid credentials")) {
-          setError("Email ou mot de passe incorrect");
+          setError("Email ou mot de passe incorrect. Vérifiez vos identifiants.");
         } else if (error.message.includes("Email not confirmed") || error.message.includes("email_not_confirmed")) {
-          setError("Email non vérifié. Vérifiez votre boîte mail ou désactivez la vérification email dans Supabase.");
-        } else if (error.message.includes("User not found")) {
+          setError("Email non vérifié. Vérifiez votre boîte mail ou désactivez la vérification email dans Supabase Settings > Authentication.");
+        } else if (error.message.includes("User not found") || error.message.includes("user_not_found")) {
           setError("Aucun compte trouvé avec cet email. Créez un compte d'abord.");
         } else {
-          setError(error.message || "Erreur de connexion");
+          setError(error.message || "Erreur de connexion. Vérifiez vos identifiants.");
         }
         return;
       }
 
       // Verify that we have a session
       if (data.session) {
+        console.log("Login successful, session created");
         router.push("/");
         router.refresh();
       } else {
+        console.error("Login succeeded but no session");
         setError("Connexion réussie mais session non créée. Réessayez.");
       }
     } catch (err) {

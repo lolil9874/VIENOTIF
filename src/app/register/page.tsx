@@ -44,6 +44,7 @@ export default function RegisterPage() {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          // Disable email confirmation if configured in Supabase
         },
       });
 
@@ -59,31 +60,37 @@ export default function RegisterPage() {
 
       // Check if user was created
       if (data.user) {
-        console.log("User created:", data.user.id, "Email confirmed:", data.user.email_confirmed_at);
+        console.log("User created:", {
+          id: data.user.id,
+          email: data.user.email,
+          confirmed: data.user.email_confirmed_at,
+          session: data.session ? "yes" : "no"
+        });
         
-        // If email is already confirmed (email confirmation disabled), user should have a session
+        // Check if we have a session (email confirmation disabled)
+        if (data.session) {
+          // User is already logged in
+          router.push("/");
+          router.refresh();
+          return;
+        }
+        
+        // If email is confirmed but no session, try to sign in
         if (data.user.email_confirmed_at) {
-          // Wait a moment for session to be established
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          console.log("Email confirmed but no session, attempting sign in...");
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
           
-          // Check session
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            // User is logged in
+          if (!signInError && signInData.session) {
             router.push("/");
             router.refresh();
             return;
           } else {
-            // Try to sign in to establish session
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-              email,
-              password,
-            });
-            if (!signInError) {
-              router.push("/");
-              router.refresh();
-              return;
-            }
+            console.error("Sign in after registration failed:", signInError);
+            setError("Compte créé mais connexion échouée. Essayez de vous connecter manuellement.");
+            return;
           }
         }
         
