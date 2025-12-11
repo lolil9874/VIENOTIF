@@ -60,21 +60,46 @@ export function Combobox({
     onChange(selected.filter((v) => v !== value));
   };
 
-  // Fuzzy filter with accent normalization
+  // Improved fuzzy filter with accent normalization and scoring
   const filteredOptions = React.useMemo(() => {
     if (!searchQuery || searchQuery.length < 1) {
       return options;
     }
-    const normalizedQuery = normalizeText(searchQuery);
-    return options.filter((option) => {
-      const normalizedLabel = normalizeText(option.label);
-      // Contains match
-      if (normalizedLabel.includes(normalizedQuery)) return true;
-      // Word start match
-      const words = normalizedLabel.split(/\s+/);
-      if (words.some((word) => word.startsWith(normalizedQuery))) return true;
-      return false;
-    });
+    
+    const normalizedQuery = normalizeText(searchQuery).toLowerCase();
+    const queryWords = normalizedQuery.split(/\s+/).filter(w => w.length > 0);
+    
+    return options
+      .map((option) => {
+        const normalizedLabel = normalizeText(option.label).toLowerCase();
+        const normalizedValue = normalizeText(option.value).toLowerCase();
+        const country = (option as any).country ? normalizeText((option as any).country).toLowerCase() : "";
+        
+        // Score de correspondance
+        let score = 0;
+        
+        // Correspondance exacte
+        if (normalizedLabel === normalizedQuery || normalizedValue === normalizedQuery) {
+          score = 100;
+        }
+        // Commence par la requête
+        else if (normalizedLabel.startsWith(normalizedQuery) || normalizedValue.startsWith(normalizedQuery)) {
+          score = 80;
+        }
+        // Contient tous les mots
+        else if (queryWords.every(word => normalizedLabel.includes(word) || normalizedValue.includes(word))) {
+          score = 60;
+        }
+        // Contient au moins un mot
+        else if (queryWords.some(word => normalizedLabel.includes(word) || normalizedValue.includes(word) || country.includes(word))) {
+          score = 40;
+        }
+        
+        return { option, score };
+      })
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(({ option }) => option);
   }, [options, searchQuery]);
 
   // Get labels for selected values
