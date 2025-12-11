@@ -3,14 +3,25 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
+    // Use anon key for public read access
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("[API] Supabase credentials not configured");
+      return NextResponse.json([], { status: 200 }); // Return empty array instead of error
+    }
+
+    const { createClient: createClientPublic } = await import("@supabase/supabase-js");
+    const supabase = createClientPublic(supabaseUrl, supabaseAnonKey);
 
     // Récupérer toutes les villes depuis la base de données
     const { data: cities, error } = await supabase
       .from("cached_cities")
       .select("*")
       .order("offer_count", { ascending: false })
-      .order("city_name", { ascending: true });
+      .order("city_name", { ascending: true })
+      .limit(1000); // Limit to prevent huge responses
 
     if (error) {
       console.error("[API] Error fetching cities from DB:", error);

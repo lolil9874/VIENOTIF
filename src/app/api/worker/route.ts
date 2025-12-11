@@ -42,7 +42,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Server configuration error: Supabase key not set" }, { status: 500 });
   }
 
-  const supabase = createServerClient(supabaseUrl, supabaseServiceKey);
+  // Test Supabase connection first
+  let supabase;
+  try {
+    supabase = createServerClient(supabaseUrl, supabaseServiceKey);
+    
+    // Test connection with a simple query
+    const { error: testError } = await supabase
+      .from("job_runs")
+      .select("id")
+      .limit(1);
+    
+    if (testError && !testError.message.includes("No rows")) {
+      console.error("[Worker] Supabase connection test failed:", testError);
+      return NextResponse.json({ 
+        error: "Failed to connect to Supabase", 
+        details: testError.message,
+        hint: "Check that SUPABASE_SERVICE_ROLE_KEY is correct and has proper permissions"
+      }, { status: 500 });
+    }
+  } catch (connError: any) {
+    console.error("[Worker] Supabase connection exception:", connError);
+    return NextResponse.json({ 
+      error: "Failed to create Supabase client", 
+      details: connError.message || String(connError),
+      hint: "Check that NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set correctly"
+    }, { status: 500 });
+  }
+
   const logs: string[] = [];
   let processed = 0;
   let newOffers = 0;
@@ -51,7 +78,7 @@ export async function POST(request: Request) {
   // Create job run record
   let jobRunId: string | null = null;
   try {
-    const { data: jobRun, error: createError } = await supabase
+    const { data: jobRun, error: createError } = await supabase!
       .from("job_runs")
       .insert({
         status: "running",
@@ -74,6 +101,7 @@ export async function POST(request: Request) {
       
       // Ne pas retourner d'erreur, continuer sans tracking
       console.warn("[Worker] Continuing without job run tracking");
+      logs.push(`[${new Date().toISOString()}] Worker started (no job run tracking)`);
     } else if (jobRun) {
       jobRunId = jobRun.id;
       logs.push(`[${new Date().toISOString()}] Worker started (job run: ${jobRunId})`);
@@ -81,7 +109,7 @@ export async function POST(request: Request) {
   } catch (err: any) {
     console.error("[Worker] Exception creating job run:", err);
     // Ne pas bloquer le worker si le job run ne peut pas être créé
-    logs.push(`[${new Date().toISOString()}] Worker started (no job run tracking)`);
+    logs.push(`[${new Date().toISOString()}] Worker started (no job run tracking - exception: ${err.message})`);
   }
 
   if (!logs.length) {
@@ -89,11 +117,11 @@ export async function POST(request: Request) {
   }
 
     try {
-    // Fetch all active subscriptions
-    const { data: subscriptions, error: fetchError } = await supabase
-      .from("subscriptions")
-      .select("*")
-      .eq("is_active", true);
+        // Fetch all active subscriptions
+        const { data: subscriptions, error: fetchError } = await supabase!
+          .from("subscriptions")
+          .select("*")
+          .eq("is_active", true);
 
     if (fetchError) {
       throw new Error(`Failed to fetch subscriptions: ${fetchError.message}`);
@@ -127,12 +155,12 @@ export async function POST(request: Request) {
           if (newOffersList.length > 0) {
             logs.push(`Found ${newOffersList.length} new offers for ${sub.label}`);
 
-            // Get user settings for notification credentials (if needed)
-            const { data: userSettings } = await supabase
-              .from("user_settings")
-              .select("*")
-              .eq("user_id", sub.user_id)
-              .single();
+                // Get user settings for notification credentials (if needed)
+                const { data: userSettings } = await supabase!
+                  .from("user_settings")
+                  .select("*")
+                  .eq("user_id", sub.user_id)
+                  .single();
 
             // Send notifications for each new offer
             for (const offer of newOffersList.slice(0, 10)) {
@@ -156,10 +184,10 @@ export async function POST(request: Request) {
               ...newOffersList.map((o) => o.id),
             ];
 
-            await supabase
-              .from("subscriptions")
-              .update({ seen_offer_ids: updatedSeenIds })
-              .eq("id", sub.id);
+                await supabase!
+                  .from("subscriptions")
+                  .update({ seen_offer_ids: updatedSeenIds })
+                  .eq("id", sub.id);
           } else {
             logs.push(`No new offers for ${sub.label}`);
           }
@@ -170,20 +198,20 @@ export async function POST(request: Request) {
       }
     }
 
-    // Update job run as success (only if jobRunId exists)
-    if (jobRunId) {
-      await supabase
-        .from("job_runs")
-        .update({
-          status: "success",
-          finished_at: new Date().toISOString(),
-          processed,
-          new_offers: newOffers,
-          errors,
-          log: logs,
-        })
-        .eq("id", jobRunId);
-    }
+        // Update job run as success (only if jobRunId exists)
+        if (jobRunId && supabase) {
+          await supabase
+            .from("job_runs")
+            .update({
+              status: "success",
+              finished_at: new Date().toISOString(),
+              processed,
+              new_offers: newOffers,
+              errors,
+              log: logs,
+            })
+            .eq("id", jobRunId);
+        }
 
     logs.push(`[${new Date().toISOString()}] Worker completed`);
 

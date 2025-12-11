@@ -1,17 +1,27 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createServerClient } from "@supabase/supabase-js";
+import { Database } from "@/lib/supabase/types";
 
 const API_URL = "https://civiweb-api-prd.azurewebsites.net/api/Offers/search";
 
+// Use service role for sync (bypass RLS)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
 export async function POST() {
   try {
-    const supabase = await createClient();
-    
-    // Vérifier l'authentification (optionnel, mais recommandé)
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    // Verify environment variables
+    if (!supabaseUrl) {
+      console.error("[Cities Sync] NEXT_PUBLIC_SUPABASE_URL is not set");
+      return NextResponse.json({ error: "Server configuration error: Supabase URL not set" }, { status: 500 });
     }
+
+    if (!supabaseServiceKey) {
+      console.error("[Cities Sync] SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_ANON_KEY are not set");
+      return NextResponse.json({ error: "Server configuration error: Supabase key not set" }, { status: 500 });
+    }
+
+    const supabase = createServerClient<Database>(supabaseUrl, supabaseServiceKey);
 
     console.log("[Cities Sync] Starting synchronization...");
 
@@ -116,55 +126,40 @@ export async function POST() {
 
     // Insérer ou mettre à jour dans la base de données
     const cities = Array.from(cityMap.values());
-    let inserted = 0;
-    let updated = 0;
+    
+    // Use upsert for better performance (batch operation)
+    const citiesToUpsert = cities.map((city) => ({
+      city_name: city.city_name,
+      city_name_en: city.city_name_en,
+      country_id: city.country_id,
+      country_name: city.country_name,
+      offer_count: city.offer_count,
+      last_seen_at: new Date().toISOString(),
+    }));
 
-    for (const city of cities) {
-      // Vérifier si la ville existe déjà
-      const { data: existing } = await supabase
-        .from("cached_cities")
-        .select("id, offer_count")
-        .eq("city_name", city.city_name)
-        .single();
+    // Get existing cities to count inserted vs updated
+    const { data: existingCities } = await supabase
+      .from("cached_cities")
+      .select("city_name");
+    
+    const existingCityNames = new Set(existingCities?.map(c => c.city_name) || []);
+    
+    // Upsert all cities
+    const { error: upsertError } = await supabase
+      .from("cached_cities")
+      .upsert(citiesToUpsert, {
+        onConflict: "city_name",
+        ignoreDuplicates: false,
+      });
 
-      if (existing) {
-        // Mettre à jour si le nombre d'offres a changé
-        if (existing.offer_count !== city.offer_count) {
-          await supabase
-            .from("cached_cities")
-            .update({
-              city_name_en: city.city_name_en,
-              country_id: city.country_id,
-              country_name: city.country_name,
-              offer_count: city.offer_count,
-              last_seen_at: new Date().toISOString(),
-            })
-            .eq("id", existing.id);
-          updated++;
-        } else {
-          // Mettre à jour last_seen_at même si offer_count n'a pas changé
-          await supabase
-            .from("cached_cities")
-            .update({
-              last_seen_at: new Date().toISOString(),
-            })
-            .eq("id", existing.id);
-        }
-      } else {
-        // Insérer nouvelle ville
-        await supabase
-          .from("cached_cities")
-          .insert({
-            city_name: city.city_name,
-            city_name_en: city.city_name_en,
-            country_id: city.country_id,
-            country_name: city.country_name,
-            offer_count: city.offer_count,
-            last_seen_at: new Date().toISOString(),
-          });
-        inserted++;
-      }
+    if (upsertError) {
+      console.error("[Cities Sync] Error upserting cities:", upsertError);
+      throw upsertError;
     }
+
+    // Count inserted vs updated
+    const inserted = cities.filter(c => !existingCityNames.has(c.city_name)).length;
+    const updated = cities.filter(c => existingCityNames.has(c.city_name)).length;
 
     console.log(`[Cities Sync] Inserted: ${inserted}, Updated: ${updated}`);
 

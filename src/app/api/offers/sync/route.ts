@@ -1,17 +1,27 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createServerClient } from "@supabase/supabase-js";
+import { Database } from "@/lib/supabase/types";
 
 const API_URL = "https://civiweb-api-prd.azurewebsites.net/api/Offers/search";
 
+// Use service role for sync (bypass RLS)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
 export async function POST() {
   try {
-    const supabase = await createClient();
-    
-    // Vérifier l'authentification (optionnel, mais recommandé)
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    // Verify environment variables
+    if (!supabaseUrl) {
+      console.error("[Offers Sync] NEXT_PUBLIC_SUPABASE_URL is not set");
+      return NextResponse.json({ error: "Server configuration error: Supabase URL not set" }, { status: 500 });
     }
+
+    if (!supabaseServiceKey) {
+      console.error("[Offers Sync] SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_ANON_KEY are not set");
+      return NextResponse.json({ error: "Server configuration error: Supabase key not set" }, { status: 500 });
+    }
+
+    const supabase = createServerClient<Database>(supabaseUrl, supabaseServiceKey);
 
     console.log("[Offers Sync] Starting synchronization...");
 
