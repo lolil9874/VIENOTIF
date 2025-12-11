@@ -37,14 +37,21 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Public API routes (no auth required)
+  const publicApiRoutes = ["/api/worker", "/api/auth", "/api/cities", "/api/offers"];
+  const isPublicApiRoute = publicApiRoutes.some(
+    (route) => request.nextUrl.pathname.startsWith(route)
+  );
+
   // Protected routes
   const protectedRoutes = ["/", "/settings"];
   const isProtectedRoute = protectedRoutes.some(
     (route) =>
       request.nextUrl.pathname === route ||
       request.nextUrl.pathname.startsWith("/api/subscriptions") ||
-      request.nextUrl.pathname.startsWith("/api/settings")
-  );
+      request.nextUrl.pathname.startsWith("/api/settings") ||
+      request.nextUrl.pathname.startsWith("/api/job-runs")
+  ) && !isPublicApiRoute; // Exclude public API routes
 
   // Public routes (auth pages)
   const authRoutes = ["/login", "/register"];
