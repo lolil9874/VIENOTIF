@@ -129,7 +129,12 @@ export default function Dashboard() {
       ]);
       
       if (!subsRes.ok) {
-        const errorData = await subsRes.json().catch(() => ({ error: "Unknown error" }));
+        let errorData = { error: "Unknown error" };
+        try {
+          errorData = await subsRes.json();
+        } catch {
+          // Keep default errorData
+        }
         console.error("Error loading subscriptions:", subsRes.status, errorData);
         setSubscriptions([]); // Set empty array instead of throwing
       } else {
@@ -149,7 +154,12 @@ export default function Dashboard() {
       }
       
       if (!runsRes.ok) {
-        const errorData = await runsRes.json().catch(() => ({ error: "Unknown error" }));
+        let errorData = { error: "Unknown error" };
+        try {
+          errorData = await runsRes.json();
+        } catch {
+          // Keep default errorData
+        }
         console.warn("Error loading job runs (non-critical):", runsRes.status, errorData);
         setJobRuns([]);
       } else {
