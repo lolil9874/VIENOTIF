@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Combobox } from "@/components/ui/combobox";
+import { CitySearch } from "@/components/ui/city-search";
 import {
   Loader2,
   MessageSquare,
@@ -170,7 +171,7 @@ export function SubscriptionForm({
         .filter(Boolean);
       return cityLabels.join("|");
     }
-    return citySearch;
+    return "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
