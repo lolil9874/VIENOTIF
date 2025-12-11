@@ -10,9 +10,11 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.
 
 export async function POST(request: Request) {
   // Optional: Verify cron secret if provided (for external cron services)
-  // If CRON_SECRET is not set, the endpoint is publicly accessible
+  // If CRON_SECRET is not set in environment variables, the endpoint is publicly accessible
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
+  
+  // Only check secret if it's actually configured
+  if (cronSecret && cronSecret.trim() !== "") {
     const authHeader = request.headers.get("authorization");
     const url = new URL(request.url);
     const urlSecret = url.searchParams.get("secret");
@@ -21,8 +23,11 @@ export async function POST(request: Request) {
     const isValid = authHeader === `Bearer ${cronSecret}` || urlSecret === cronSecret;
     
     if (!isValid) {
+      console.log("[Worker] Unauthorized access attempt - CRON_SECRET mismatch");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+  } else {
+    console.log("[Worker] Endpoint accessed without CRON_SECRET (public access)");
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseServiceKey);
