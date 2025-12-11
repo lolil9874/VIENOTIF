@@ -30,6 +30,17 @@ export async function POST(request: Request) {
     console.log("[Worker] Endpoint accessed without CRON_SECRET (public access)");
   }
 
+  // Verify environment variables
+  if (!supabaseUrl) {
+    console.error("[Worker] NEXT_PUBLIC_SUPABASE_URL is not set");
+    return NextResponse.json({ error: "Server configuration error: Supabase URL not set" }, { status: 500 });
+  }
+
+  if (!supabaseServiceKey) {
+    console.error("[Worker] SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_ANON_KEY are not set");
+    return NextResponse.json({ error: "Server configuration error: Supabase key not set" }, { status: 500 });
+  }
+
   const supabase = createServerClient(supabaseUrl, supabaseServiceKey);
   const logs: string[] = [];
   let processed = 0;
@@ -50,8 +61,18 @@ export async function POST(request: Request) {
     .single();
 
   if (createError) {
-    console.error("Failed to create job run:", createError);
-    return NextResponse.json({ error: "Failed to create job run" }, { status: 500 });
+    console.error("[Worker] Failed to create job run:", {
+      error: createError,
+      message: createError.message,
+      details: createError.details,
+      hint: createError.hint,
+      code: createError.code,
+    });
+    return NextResponse.json({ 
+      error: "Failed to create job run",
+      details: createError.message,
+      hint: "Check that the job_runs table exists and the Supabase service role key has proper permissions"
+    }, { status: 500 });
   }
 
   const jobRunId = jobRun.id;
