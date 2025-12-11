@@ -10,12 +10,17 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.
 
 export async function POST(request: Request) {
   // Optional: Verify cron secret if provided (for external cron services)
+  // If CRON_SECRET is not set, the endpoint is publicly accessible
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret) {
     const authHeader = request.headers.get("authorization");
-    const urlSecret = new URL(request.url).searchParams.get("secret");
+    const url = new URL(request.url);
+    const urlSecret = url.searchParams.get("secret");
     
-    if (authHeader !== `Bearer ${cronSecret}` && urlSecret !== cronSecret) {
+    // Allow both Bearer token and URL parameter
+    const isValid = authHeader === `Bearer ${cronSecret}` || urlSecret === cronSecret;
+    
+    if (!isValid) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
   }
