@@ -43,10 +43,12 @@ cp .env.example .env.local
 3. Configurez `.env.local` :
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://knbhidpildgpbmzxaaqe.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
+
+**⚠️ Important** : Remplacez `your-anon-key` et `your-service-role-key` par les vraies clés de votre projet Supabase.
 
 4. Exécutez la migration SQL dans votre dashboard Supabase (SQL Editor) :
    - Ouvrez le SQL Editor dans votre dashboard Supabase
