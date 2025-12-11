@@ -20,6 +20,11 @@ export async function GET() {
 
     if (error) {
       console.error("[API] Error fetching job runs:", error);
+      // Si la table n'existe pas, retourner un tableau vide au lieu d'erreur
+      if (error.message.includes("relation") || error.message.includes("does not exist")) {
+        console.error("[API] Table 'job_runs' does not exist. Please run the migration SQL.");
+        return NextResponse.json([]);
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

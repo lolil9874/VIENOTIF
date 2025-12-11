@@ -45,10 +45,15 @@ export async function GET() {
 
     if (error) {
       console.error("[API] Error fetching subscriptions:", error);
+      // Si la table n'existe pas, retourner un tableau vide au lieu d'erreur
+      if (error.message.includes("relation") || error.message.includes("does not exist")) {
+        console.error("[API] Table 'subscriptions' does not exist. Please run the migration SQL.");
+        return NextResponse.json([]);
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(subscriptions);
+    return NextResponse.json(subscriptions || []);
   } catch (error) {
     console.error("[API] Error:", error);
     return NextResponse.json(
