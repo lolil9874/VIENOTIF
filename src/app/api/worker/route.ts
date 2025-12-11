@@ -9,8 +9,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export async function POST(request: Request) {
+  // This endpoint is public and does not require authentication
   // Optional: Verify cron secret if provided (for external cron services)
-  // If CRON_SECRET is not set in environment variables, the endpoint is publicly accessible
   const cronSecret = process.env.CRON_SECRET;
   
   // Only check secret if it's actually configured
@@ -26,9 +26,9 @@ export async function POST(request: Request) {
       console.log("[Worker] Unauthorized access attempt - CRON_SECRET mismatch");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-  } else {
-    console.log("[Worker] Endpoint accessed without CRON_SECRET (public access)");
   }
+  
+  console.log("[Worker] Endpoint accessed - starting worker");
 
   // Verify environment variables
   if (!supabaseUrl) {
