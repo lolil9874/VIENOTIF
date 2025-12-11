@@ -45,12 +45,21 @@ cp .env.example .env.local
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
 4. Exécutez la migration SQL dans votre dashboard Supabase (SQL Editor) :
    - Ouvrez le SQL Editor dans votre dashboard Supabase
    - Copiez-collez le contenu de `supabase/migrations/001_initial_schema.sql`
    - Exécutez la requête
+
+5. **Désactiver la vérification email (recommandé pour le développement)** :
+   - Allez dans **Authentication** > **Settings** dans votre dashboard Supabase
+   - Trouvez la section **"User Management"**
+   - **Désactivez** "Enable email confirmations"
+   - Cliquez sur **Save**
+   
+   ⚠️ **Important** : Si vous gardez la vérification email activée, vous devez configurer un SMTP personnalisé dans Supabase (voir section ci-dessous).
 
 ### Lancer en développement
 
