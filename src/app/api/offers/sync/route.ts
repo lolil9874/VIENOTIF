@@ -96,18 +96,27 @@ export async function POST() {
       updated_at: new Date().toISOString(),
     }));
 
-    // Utiliser upsert pour insérer ou mettre à jour
-    // On supprime d'abord les anciennes offres qui ne sont plus dans l'API
+    // Récupérer les IDs existants pour compter les mises à jour
+    const { data: existingOffers } = await supabase
+      .from("cached_offers")
+      .select("id");
+    
+    const existingIds = new Set((existingOffers || []).map(o => o.id));
     const currentOfferIds = offersToInsert.map(o => o.id);
     
-    // Supprimer les offres qui n'existent plus
-    const { error: deleteError } = await supabase
-      .from("cached_offers")
-      .delete()
-      .not("id", "in", `(${currentOfferIds.join(",")})`);
-
-    if (deleteError) {
-      console.warn("[Offers Sync] Error deleting old offers:", deleteError);
+    // Supprimer les offres qui ne sont plus dans l'API
+    const idsToDelete = Array.from(existingIds).filter(id => !currentOfferIds.includes(id));
+    if (idsToDelete.length > 0) {
+      const { error: deleteError } = await supabase
+        .from("cached_offers")
+        .delete()
+        .in("id", idsToDelete);
+      
+      if (deleteError) {
+        console.warn("[Offers Sync] Error deleting old offers:", deleteError);
+      } else {
+        console.log(`[Offers Sync] Deleted ${idsToDelete.length} old offers`);
+      }
     }
 
     // Insérer ou mettre à jour par lots de 500
@@ -118,21 +127,17 @@ export async function POST() {
     for (let i = 0; i < offersToInsert.length; i += batchSize) {
       const batch = offersToInsert.slice(i, i + batchSize);
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("cached_offers")
         .upsert(batch, {
           onConflict: "id",
           ignoreDuplicates: false,
-        })
-        .select();
+        });
 
       if (error) {
-        console.error(`[Offers Sync] Error upserting batch ${i / batchSize + 1}:`, error);
+        console.error(`[Offers Sync] Error upserting batch ${Math.floor(i / batchSize) + 1}:`, error);
       } else {
         // Compter les nouvelles vs mises à jour
-        const existingIds = new Set(
-          (await supabase.from("cached_offers").select("id").in("id", batch.map(o => o.id))).data?.map(o => o.id) || []
-        );
         batch.forEach(offer => {
           if (existingIds.has(offer.id)) {
             updated++;
