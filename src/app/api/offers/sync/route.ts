@@ -88,10 +88,10 @@ export async function POST() {
       mission_duration: offer.missionDuration || null,
       teleworking_available: offer.teleworkingAvailable || false,
       mission_type: offer.missionType === 1 ? 'VIE' : offer.missionType === 2 ? 'VIA' : null,
-      activity_sector_id: offer.activitySectorId || null,
-      study_level_id: offer.studiesLevelId || null,
-      company_size: offer.companiesSize || null,
-      geographic_zone: offer.geographicZone || null,
+      activity_sector_id: offer.activitySectorId ? String(offer.activitySectorId) : null,
+      study_level_id: offer.studiesLevelId ? String(offer.studiesLevelId) : null,
+      company_size: offer.companiesSize ? String(offer.companiesSize) : null,
+      geographic_zone: offer.geographicZone ? String(offer.geographicZone) : null,
       raw_data: offer, // Stocker toutes les données originales
       updated_at: new Date().toISOString(),
     }));
