@@ -72,14 +72,16 @@ export async function POST(request: Request) {
         code: createError.code,
       });
       
-      // Si l'insertion échoue, continuer quand même mais sans tracking
+      // Ne pas retourner d'erreur, continuer sans tracking
       console.warn("[Worker] Continuing without job run tracking");
-    } else {
+    } else if (jobRun) {
       jobRunId = jobRun.id;
+      logs.push(`[${new Date().toISOString()}] Worker started (job run: ${jobRunId})`);
     }
   } catch (err: any) {
     console.error("[Worker] Exception creating job run:", err);
-    // Continuer même si le job run ne peut pas être créé
+    // Ne pas bloquer le worker si le job run ne peut pas être créé
+    logs.push(`[${new Date().toISOString()}] Worker started (no job run tracking)`);
   }
 
   logs.push(`[${new Date().toISOString()}] Worker started`);
