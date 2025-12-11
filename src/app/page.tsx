@@ -132,22 +132,42 @@ export default function Dashboard() {
       if (!subsRes.ok) {
         const errorData = await subsRes.json().catch(() => ({ error: "Unknown error" }));
         console.error("Error loading subscriptions:", subsRes.status, errorData);
-        throw new Error(errorData.error || `HTTP ${subsRes.status}`);
+        setSubscriptions([]); // Set empty array instead of throwing
+      } else {
+        // Only parse if response is OK
+        try {
+          const subs = await subsRes.json();
+          if (Array.isArray(subs)) {
+            setSubscriptions(subs);
+          } else {
+            console.warn("Subscriptions response is not an array:", subs);
+            setSubscriptions([]);
+          }
+        } catch (parseError) {
+          console.error("Error parsing subscriptions:", parseError);
+          setSubscriptions([]);
+        }
       }
       
       if (!runsRes.ok) {
         const errorData = await runsRes.json().catch(() => ({ error: "Unknown error" }));
-        console.error("Error loading job runs:", runsRes.status, errorData);
-        // Job runs error is not critical, continue
+        console.warn("Error loading job runs (non-critical):", runsRes.status, errorData);
+        setJobRuns([]);
+      } else {
+        // Only parse if response is OK
+        try {
+          const runs = await runsRes.json();
+          if (Array.isArray(runs)) {
+            setJobRuns(runs);
+          } else {
+            console.warn("Job runs response is not an array:", runs);
+            setJobRuns([]);
+          }
+        } catch (parseError) {
+          console.error("Error parsing job runs:", parseError);
+          setJobRuns([]);
+        }
       }
-      
-      const [subs, runs] = await Promise.all([
-        subsRes.json().catch(() => []),
-        runsRes.json().catch(() => [])
-      ]);
-      
-      if (Array.isArray(subs)) setSubscriptions(subs);
-      if (Array.isArray(runs)) setJobRuns(runs);
     } catch (error) {
       console.error("Error loading data:", error);
       // Set empty arrays on error to prevent infinite loading
