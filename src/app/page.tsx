@@ -95,11 +95,31 @@ export default function Dashboard() {
         fetch("/api/subscriptions"),
         fetch("/api/job-runs"),
       ]);
-      const [subs, runs] = await Promise.all([subsRes.json(), runsRes.json()]);
+      
+      if (!subsRes.ok) {
+        const errorData = await subsRes.json().catch(() => ({ error: "Unknown error" }));
+        console.error("Error loading subscriptions:", subsRes.status, errorData);
+        throw new Error(errorData.error || `HTTP ${subsRes.status}`);
+      }
+      
+      if (!runsRes.ok) {
+        const errorData = await runsRes.json().catch(() => ({ error: "Unknown error" }));
+        console.error("Error loading job runs:", runsRes.status, errorData);
+        // Job runs error is not critical, continue
+      }
+      
+      const [subs, runs] = await Promise.all([
+        subsRes.json().catch(() => []),
+        runsRes.json().catch(() => [])
+      ]);
+      
       if (Array.isArray(subs)) setSubscriptions(subs);
       if (Array.isArray(runs)) setJobRuns(runs);
     } catch (error) {
       console.error("Error loading data:", error);
+      // Set empty arrays on error to prevent infinite loading
+      setSubscriptions([]);
+      setJobRuns([]);
     } finally {
       setLoading(false);
     }
