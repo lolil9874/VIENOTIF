@@ -159,7 +159,8 @@ export async function POST(request: Request) {
       processed,
       newOffers,
       errors,
-    });
+      timestamp: new Date().toISOString(),
+    }, { status: 200 });
   } catch (error) {
     logs.push(`[${new Date().toISOString()}] Worker failed: ${error}`);
 
