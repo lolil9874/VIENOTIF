@@ -100,10 +100,10 @@ export async function POST(request: Request) {
           const filters: SubscriptionFilters = sub.filters as SubscriptionFilters || {};
           logs.push(`Processing subscription: ${sub.label}`);
 
-          // Fetch offers from API
-          let offers = await searchOffers(filters);
+          // Fetch offers from cache (much faster and more reliable)
+          let offers = await getCachedOffers(supabase, filters);
 
-          // Apply post-processing filters (city, company, etc.)
+          // Apply post-processing filters (city, company fuzzy matching)
           offers = filterOffers(offers, filters);
 
           // Get seen offer IDs

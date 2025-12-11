@@ -86,15 +86,28 @@ export default function Dashboard() {
       }
       setUserEmail(user?.email || null);
       
-      // Synchroniser les villes automatiquement à chaque connexion
+      // Synchroniser les offres et villes automatiquement à chaque connexion
+      // (seulement si le cache est vide ou ancien)
       try {
-        const syncRes = await fetch("/api/cities/sync", { method: "POST" });
-        if (syncRes.ok) {
-          const syncData = await syncRes.json();
-          console.log("Villes synchronisées:", syncData.message);
+        const { data: lastSync } = await supabase
+          .from("cached_offers")
+          .select("updated_at")
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        const shouldSync = !lastSync || 
+          new Date(lastSync.updated_at) < new Date(Date.now() - 15 * 60 * 1000); // 15 min
+
+        if (shouldSync) {
+          const syncRes = await fetch("/api/offers/sync", { method: "POST" });
+          if (syncRes.ok) {
+            const syncData = await syncRes.json();
+            console.log("Offres et villes synchronisées:", syncData.message);
+          }
         }
       } catch (err) {
-        console.error("Erreur lors de la synchronisation des villes:", err);
+        console.error("Erreur lors de la synchronisation:", err);
         // Ne pas bloquer l'utilisateur si la sync échoue
       }
     };
