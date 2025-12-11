@@ -88,35 +88,34 @@ export default function Dashboard() {
       
       // Synchroniser les offres et villes automatiquement en arrière-plan
       // (ne bloque pas le chargement de la page)
-      setTimeout(() => {
-        supabase
-          .from("cached_offers")
-          .select("updated_at")
-          .order("updated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle()
-          .then(({ data: lastSync, error: syncCheckError }) => {
-            // Si la table est vide ou si le cache est ancien (> 15 min), synchroniser
-            const shouldSync = syncCheckError || !lastSync || 
-              (lastSync && new Date(lastSync.updated_at) < new Date(Date.now() - 15 * 60 * 1000));
+      setTimeout(async () => {
+        try {
+          const { data: lastSync, error: syncCheckError } = await supabase
+            .from("cached_offers")
+            .select("updated_at")
+            .order("updated_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-            if (shouldSync) {
-              // Lancer la sync en arrière-plan sans bloquer
-              fetch("/api/offers/sync", { method: "POST" })
-                .then(async (syncRes) => {
-                  if (syncRes.ok) {
-                    const syncData = await syncRes.json();
-                    console.log("Offres et villes synchronisées:", syncData.message);
-                  }
-                })
-                .catch((err) => {
-                  console.error("Erreur lors de la synchronisation:", err);
-                });
+          // Si la table est vide ou si le cache est ancien (> 15 min), synchroniser
+          const shouldSync = syncCheckError || !lastSync || 
+            (lastSync && new Date(lastSync.updated_at) < new Date(Date.now() - 15 * 60 * 1000));
+
+          if (shouldSync) {
+            // Lancer la sync en arrière-plan sans bloquer
+            try {
+              const syncRes = await fetch("/api/offers/sync", { method: "POST" });
+              if (syncRes.ok) {
+                const syncData = await syncRes.json();
+                console.log("Offres et villes synchronisées:", syncData.message);
+              }
+            } catch (syncErr) {
+              console.error("Erreur lors de la synchronisation:", syncErr);
             }
-          })
-          .catch((err) => {
-            console.error("Erreur lors de la vérification du cache:", err);
-          });
+          }
+        } catch (err) {
+          console.error("Erreur lors de la vérification du cache:", err);
+        }
       }, 2000); // Attendre 2 secondes après le chargement
     };
     getUser();
