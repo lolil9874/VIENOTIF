@@ -314,7 +314,7 @@ export function SubscriptionForm({
             />
           </div>
 
-          {/* Cities - Dropdown */}
+          {/* Cities - Single Search Box */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">📍 Villes</Label>
             {loadingCities ? (
@@ -323,27 +323,19 @@ export function SubscriptionForm({
                 Chargement des villes...
               </div>
             ) : (
-              <Combobox
-                options={citiesList}
+              <CitySearch
+                cities={citiesList}
                 selected={selectedCities}
                 onChange={setSelectedCities}
-                placeholder="Sélectionner des villes..."
-                searchPlaceholder="Rechercher une ville (ex: Palm Beach, Paris, New York)..."
-                emptyText="Aucune ville trouvée"
-                allowCustom={true}
+                placeholder="Rechercher une ville (ex: Palm Beach, Paris, New York)..."
+                loading={loadingCities}
               />
             )}
             <p className="text-xs text-slate-500">
               {citiesList.length > 0 
-                ? `${citiesList.length} villes disponibles. Vous pouvez aussi taper une ville manuellement.`
-                : "Tapez une ville manuellement ou synchronisez les villes depuis l'API."}
+                ? `${citiesList.length} villes disponibles. Tapez pour rechercher et sélectionner.`
+                : "Synchronisation des villes en cours..."}
             </p>
-            <Input
-              value={citySearch}
-              onChange={(e) => setCitySearch(e.target.value)}
-              placeholder="Ex: Palm Beach, Salt Lake City, Nice..."
-              className="h-10"
-            />
           </div>
 
           {/* Geographic Zones - Compact */}
