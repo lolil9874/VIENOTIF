@@ -39,7 +39,7 @@ export default function RegisterPage() {
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -48,27 +48,33 @@ export default function RegisterPage() {
       });
 
       if (error) {
-        if (error.message.includes("already registered")) {
-          setError("Cet email est déjà utilisé");
+        if (error.message.includes("already registered") || error.message.includes("User already registered")) {
+          setError("Cet email est déjà utilisé. Essayez de vous connecter.");
         } else {
           setError(error.message);
         }
         return;
       }
 
-      // If email confirmation is disabled, redirect directly to login
-      // Otherwise show success message
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // User is already logged in (email confirmation disabled)
-        router.push("/");
-        router.refresh();
+      // Check if user was created and if email confirmation is required
+      if (data.user) {
+        // Check if user has a session (email confirmation disabled)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          // User is already logged in (email confirmation disabled)
+          router.push("/");
+          router.refresh();
+          return;
+        } else {
+          // Email confirmation required - user needs to verify email
+          setSuccess(true);
+        }
       } else {
-        // Email confirmation required
-        setSuccess(true);
+        setError("Erreur lors de la création du compte");
       }
-    } catch {
-      setError("Une erreur est survenue");
+    } catch (err) {
+      console.error("Registration error:", err);
+      setError("Une erreur est survenue lors de l'inscription");
     } finally {
       setLoading(false);
     }

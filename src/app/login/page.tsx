@@ -24,29 +24,35 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        if (error.message.includes("Invalid login credentials")) {
+        console.error("Login error:", error);
+        if (error.message.includes("Invalid login credentials") || error.message.includes("Invalid credentials")) {
           setError("Email ou mot de passe incorrect");
-        } else if (error.message.includes("Email not confirmed")) {
-          // Try to sign in anyway - Supabase might allow it if email confirmation is disabled
-          // If it still fails, show a helpful message
-          setError("Email non vérifié. Veuillez désactiver la vérification email dans Supabase Settings > Authentication.");
-          return;
+        } else if (error.message.includes("Email not confirmed") || error.message.includes("email_not_confirmed")) {
+          setError("Email non vérifié. Vérifiez votre boîte mail ou désactivez la vérification email dans Supabase.");
+        } else if (error.message.includes("User not found")) {
+          setError("Aucun compte trouvé avec cet email. Créez un compte d'abord.");
         } else {
-          setError(error.message);
+          setError(error.message || "Erreur de connexion");
         }
         return;
       }
 
-      router.push("/");
-      router.refresh();
-    } catch {
-      setError("Une erreur est survenue");
+      // Verify that we have a session
+      if (data.session) {
+        router.push("/");
+        router.refresh();
+      } else {
+        setError("Connexion réussie mais session non créée. Réessayez.");
+      }
+    } catch (err) {
+      console.error("Login exception:", err);
+      setError("Une erreur est survenue lors de la connexion");
     } finally {
       setLoading(false);
     }
