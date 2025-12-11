@@ -206,7 +206,18 @@ export async function POST(request: Request) {
   }
 }
 
-// GET endpoint for cron services (cron-job.org, etc.)
+// GET endpoint for cron services (cron-job.org, Uptime Robot, etc.)
 export async function GET(request: Request) {
+  // Handle OPTIONS for CORS
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
+  }
   return POST(request);
 }
