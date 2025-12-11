@@ -56,21 +56,36 @@ export default function RegisterPage() {
         return;
       }
 
-      // Check if user was created and if email confirmation is required
+      // Check if user was created
       if (data.user) {
+        // Wait a bit for session to be created if email confirmation is disabled
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         // Check if user has a session (email confirmation disabled)
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
         if (session) {
           // User is already logged in (email confirmation disabled)
           router.push("/");
           router.refresh();
           return;
-        } else {
-          // Email confirmation required - user needs to verify email
-          setSuccess(true);
+        } else if (data.user.email_confirmed_at) {
+          // User is confirmed but no session - try to sign in
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (!signInError) {
+            router.push("/");
+            router.refresh();
+            return;
+          }
         }
+        
+        // Email confirmation required - user needs to verify email
+        setSuccess(true);
       } else {
-        setError("Erreur lors de la création du compte");
+        setError("Erreur lors de la création du compte. Réessayez.");
       }
     } catch (err) {
       console.error("Registration error:", err);
