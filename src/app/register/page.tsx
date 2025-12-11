@@ -48,47 +48,52 @@ export default function RegisterPage() {
       });
 
       if (error) {
+        console.error("SignUp error:", error);
         if (error.message.includes("already registered") || error.message.includes("User already registered")) {
           setError("Cet email est déjà utilisé. Essayez de vous connecter.");
         } else {
-          setError(error.message);
+          setError(error.message || "Erreur lors de l'inscription");
         }
         return;
       }
 
       // Check if user was created
       if (data.user) {
-        // Wait a bit for session to be created if email confirmation is disabled
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log("User created:", data.user.id, "Email confirmed:", data.user.email_confirmed_at);
         
-        // Check if user has a session (email confirmation disabled)
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (session) {
-          // User is already logged in (email confirmation disabled)
-          router.push("/");
-          router.refresh();
-          return;
-        } else if (data.user.email_confirmed_at) {
-          // User is confirmed but no session - try to sign in
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-          if (!signInError) {
+        // If email is already confirmed (email confirmation disabled), user should have a session
+        if (data.user.email_confirmed_at) {
+          // Wait a moment for session to be established
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Check session
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            // User is logged in
             router.push("/");
             router.refresh();
             return;
+          } else {
+            // Try to sign in to establish session
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+            if (!signInError) {
+              router.push("/");
+              router.refresh();
+              return;
+            }
           }
         }
         
-        // Email confirmation required - user needs to verify email
+        // Email confirmation required - show success message
         setSuccess(true);
       } else {
-        setError("Erreur lors de la création du compte. Réessayez.");
+        setError("Erreur : compte non créé. Réessayez.");
       }
     } catch (err) {
-      console.error("Registration error:", err);
+      console.error("Registration exception:", err);
       setError("Une erreur est survenue lors de l'inscription");
     } finally {
       setLoading(false);
