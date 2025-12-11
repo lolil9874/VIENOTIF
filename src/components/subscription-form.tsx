@@ -166,7 +166,7 @@ export function SubscriptionForm({
   const buildCitySearch = (): string => {
     if (selectedCities.length > 0) {
       const cityLabels = selectedCities
-        .map((v) => CITIES_LIST.find((c) => c.value === v)?.label.replace(/^..\s/, ""))
+        .map((v) => citiesList.find((c) => c.value === v)?.label || v)
         .filter(Boolean);
       return cityLabels.join("|");
     }
