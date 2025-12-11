@@ -22,7 +22,7 @@ export type Database = {
           country_name: string | null
           id: string
           last_seen_at: string
-          offer_count: number
+          offer_count: number | null
         }
         Insert: {
           city_name: string
@@ -31,7 +31,7 @@ export type Database = {
           country_name?: string | null
           id?: string
           last_seen_at?: string
-          offer_count?: number
+          offer_count?: number | null
         }
         Update: {
           city_name?: string
@@ -40,40 +40,76 @@ export type Database = {
           country_name?: string | null
           id?: string
           last_seen_at?: string
-          offer_count?: number
+          offer_count?: number | null
         }
         Relationships: []
       }
-      call_logs: {
+      cached_offers: {
         Row: {
-          created_at: string | null
-          id: string
-          metadata: Json | null
-          status: string | null
-          summary: string | null
-          transcript: string | null
-          user_id: string | null
-          vapi_call_id: string
+          activity_sector_id: string | null
+          city_name: string | null
+          city_name_en: string | null
+          company_size: string | null
+          country_id: string | null
+          country_name: string | null
+          country_name_en: string | null
+          created_at: string
+          geographic_zone: string | null
+          id: number
+          indemnite: number | null
+          mission_duration: number | null
+          mission_start_date: string | null
+          mission_title: string
+          mission_type: string | null
+          organization_name: string | null
+          raw_data: Json
+          study_level_id: string | null
+          teleworking_available: boolean | null
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
-          id?: string
-          metadata?: Json | null
-          status?: string | null
-          summary?: string | null
-          transcript?: string | null
-          user_id?: string | null
-          vapi_call_id: string
+          activity_sector_id?: string | null
+          city_name?: string | null
+          city_name_en?: string | null
+          company_size?: string | null
+          country_id?: string | null
+          country_name?: string | null
+          country_name_en?: string | null
+          created_at?: string
+          geographic_zone?: string | null
+          id: number
+          indemnite?: number | null
+          mission_duration?: number | null
+          mission_start_date?: string | null
+          mission_title: string
+          mission_type?: string | null
+          organization_name?: string | null
+          raw_data: Json
+          study_level_id?: string | null
+          teleworking_available?: boolean | null
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
-          id?: string
-          metadata?: Json | null
-          status?: string | null
-          summary?: string | null
-          transcript?: string | null
-          user_id?: string | null
-          vapi_call_id?: string
+          activity_sector_id?: string | null
+          city_name?: string | null
+          city_name_en?: string | null
+          company_size?: string | null
+          country_id?: string | null
+          country_name?: string | null
+          country_name_en?: string | null
+          created_at?: string
+          geographic_zone?: string | null
+          id?: number
+          indemnite?: number | null
+          mission_duration?: number | null
+          mission_start_date?: string | null
+          mission_title?: string
+          mission_type?: string | null
+          organization_name?: string | null
+          raw_data?: Json
+          study_level_id?: string | null
+          teleworking_available?: boolean | null
+          updated_at?: string
         }
         Relationships: []
       }
