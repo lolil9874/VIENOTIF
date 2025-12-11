@@ -1,36 +1,130 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌍 VIENOTIF
 
-## Getting Started
+**Plateforme d'alertes pour les offres VIE/VIA (Volontariat International en Entreprise)**
 
-First, run the development server:
+VIENOTIF surveille automatiquement les nouvelles offres VIE/VIA sur [Business France](https://mon-vie-via.businessfrance.fr/) et vous envoie des notifications personnalisées par Telegram, Discord ou Email.
+
+![Login](docs/login.png)
+
+## ✨ Fonctionnalités
+
+- 🔐 **Authentification sécurisée** - Email/mot de passe avec Supabase Auth
+- 🔍 **Filtres avancés** - Pays, villes, secteurs d'activité, niveau d'études, taille d'entreprise, indemnité, dates
+- 🔔 **Multi-canaux** - Telegram, Discord, Email
+- 🤖 **Vérification automatique** - Toutes les 15 minutes via cron
+- 📱 **Interface mobile-friendly** - Design responsive moderne
+- 🌐 **Recherche fuzzy** - Recherche intelligente avec normalisation des accents
+
+## 🚀 Démarrage rapide
+
+### Prérequis
+
+- Node.js 18+
+- Compte [Supabase](https://supabase.com) (gratuit)
+
+### Installation
+
+```bash
+# Cloner le repo
+git clone https://github.com/yourusername/vienotif.git
+cd vienotif
+
+# Installer les dépendances
+npm install
+
+# Configurer les variables d'environnement
+cp .env.example .env.local
+```
+
+### Configuration Supabase
+
+1. Créez un projet sur [Supabase](https://supabase.com)
+2. Récupérez vos clés API dans Settings > API
+3. Configurez `.env.local` :
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+4. Exécutez la migration SQL dans votre dashboard Supabase (SQL Editor) :
+   - Ouvrez le SQL Editor dans votre dashboard Supabase
+   - Copiez-collez le contenu de `supabase/migrations/001_initial_schema.sql`
+   - Exécutez la requête
+
+### Lancer en développement
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+L'application sera disponible sur [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🔧 Configuration des notifications
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Telegram
 
-## Learn More
+1. Créez un bot via [@BotFather](https://t.me/BotFather)
+2. Obtenez votre Chat ID via [@userinfobot](https://t.me/userinfobot)
+3. Configurez le token dans la page Paramètres ou en variable d'environnement
 
-To learn more about Next.js, take a look at the following resources:
+### Discord
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Créez un webhook dans les paramètres de votre serveur Discord
+2. Copiez l'URL du webhook
+3. Utilisez cette URL comme "cible" dans vos souscriptions
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Email
 
-## Deploy on Vercel
+1. Configurez un serveur SMTP dans la page Paramètres
+2. Pour Gmail, utilisez un [mot de passe d'application](https://myaccount.google.com/apppasswords)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📦 Déploiement
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Vercel (recommandé)
+
+1. Importez le repo sur [Vercel](https://vercel.com)
+2. Configurez les variables d'environnement :
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+3. Le cron job (`/api/worker`) s'exécutera automatiquement toutes les 15 minutes
+
+### Railway / Render
+
+1. Connectez votre repo GitHub
+2. Configurez les variables d'environnement
+3. Configurez un cron externe pour appeler `GET /api/worker`
+
+## 🗺️ Filtres disponibles
+
+| Filtre | Description |
+|--------|-------------|
+| 🌍 Pays | Sélection multiple de pays |
+| 📍 Villes | Recherche fuzzy par ville |
+| 🗺️ Zones | Europe, Amérique, Asie, etc. |
+| 📋 Type | VIE ou VIA |
+| ⏱️ Durée | 6, 12, 18, 24 mois |
+| 🏠 Télétravail | Oui/Non |
+| 🏢 Entreprise | Recherche par nom |
+| 🏭 Secteur | 18 secteurs d'activité |
+| 🎓 Études | Bac à Bac+6 |
+| 📊 Taille | TPE à Grande entreprise |
+| 💶 Indemnité | Minimum/Maximum €/mois |
+| 📅 Date début | Plage de dates |
+
+## 🛠️ Stack technique
+
+- **Frontend** : Next.js 16, React 19, Tailwind CSS
+- **Backend** : Next.js API Routes, Supabase
+- **Base de données** : Supabase (PostgreSQL)
+- **Auth** : Supabase Auth
+- **Notifications** : Telegram Bot API, Discord Webhooks, Nodemailer
+- **UI** : Radix UI, Lucide Icons
+
+## 📝 Licence
+
+MIT
+
+---
+
+Made with ❤️ for VIE/VIA job seekers
