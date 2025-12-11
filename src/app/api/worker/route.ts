@@ -84,9 +84,11 @@ export async function POST(request: Request) {
     logs.push(`[${new Date().toISOString()}] Worker started (no job run tracking)`);
   }
 
-  logs.push(`[${new Date().toISOString()}] Worker started`);
+    if (!logs.length) {
+      logs.push(`[${new Date().toISOString()}] Worker started`);
+    }
 
-  try {
+    try {
     // Fetch all active subscriptions
     const { data: subscriptions, error: fetchError } = await supabase
       .from("subscriptions")
@@ -168,18 +170,20 @@ export async function POST(request: Request) {
       }
     }
 
-    // Update job run as success
-    await supabase
-      .from("job_runs")
-      .update({
-        status: "success",
-        finished_at: new Date().toISOString(),
-        processed,
-        new_offers: newOffers,
-        errors,
-        log: logs,
-      })
-      .eq("id", jobRunId);
+    // Update job run as success (only if jobRunId exists)
+    if (jobRunId) {
+      await supabase
+        .from("job_runs")
+        .update({
+          status: "success",
+          finished_at: new Date().toISOString(),
+          processed,
+          new_offers: newOffers,
+          errors,
+          log: logs,
+        })
+        .eq("id", jobRunId);
+    }
 
     logs.push(`[${new Date().toISOString()}] Worker completed`);
 
