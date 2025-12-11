@@ -87,7 +87,12 @@ L'application sera disponible sur [http://localhost:3000](http://localhost:3000)
 2. Configurez les variables d'environnement :
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-3. Le cron job (`/api/worker`) s'exécutera automatiquement toutes les 15 minutes
+   - `SUPABASE_SERVICE_ROLE_KEY` (recommandé pour le worker)
+   - `CRON_SECRET` (optionnel, pour sécuriser l'endpoint worker)
+3. Le cron job Vercel s'exécute une fois par jour (limite plan Hobby)
+4. Pour des vérifications plus fréquentes, utilisez [cron-job.org](https://cron-job.org) :
+   - Créez un cron job qui appelle : `https://votre-app.vercel.app/api/worker?secret=VOTRE_CRON_SECRET`
+   - Fréquence : `*/15 * * * *` (toutes les 15 minutes)
 
 ### Railway / Render
 

@@ -8,7 +8,18 @@ import { SubscriptionFilters, VIEOffer } from "@/lib/types";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export async function POST() {
+export async function POST(request: Request) {
+  // Optional: Verify cron secret if provided (for external cron services)
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret) {
+    const authHeader = request.headers.get("authorization");
+    const urlSecret = new URL(request.url).searchParams.get("secret");
+    
+    if (authHeader !== `Bearer ${cronSecret}` && urlSecret !== cronSecret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   const supabase = createServerClient(supabaseUrl, supabaseServiceKey);
   const logs: string[] = [];
   let processed = 0;
@@ -163,7 +174,7 @@ export async function POST() {
   }
 }
 
-// GET endpoint for cron services
-export async function GET() {
-  return POST();
+// GET endpoint for cron services (cron-job.org, etc.)
+export async function GET(request: Request) {
+  return POST(request);
 }
