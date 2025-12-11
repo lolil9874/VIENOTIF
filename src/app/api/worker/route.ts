@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@supabase/supabase-js";
-import { searchOffers, filterOffers, getOfferLink, formatOfferForNotification } from "@/lib/vie-api";
+import { filterOffers, getOfferLink, formatOfferForNotification } from "@/lib/vie-api";
+import { getCachedOffers } from "@/lib/offers-cache";
 import { sendNotification } from "@/lib/notifications";
 import { SubscriptionFilters, VIEOffer } from "@/lib/types";
 
