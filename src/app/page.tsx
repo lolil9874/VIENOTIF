@@ -86,30 +86,38 @@ export default function Dashboard() {
       }
       setUserEmail(user?.email || null);
       
-      // Synchroniser les offres et villes automatiquement à chaque connexion
-      // (seulement si le cache est vide ou ancien)
-      try {
-        const { data: lastSync } = await supabase
+      // Synchroniser les offres et villes automatiquement en arrière-plan
+      // (ne bloque pas le chargement de la page)
+      setTimeout(() => {
+        supabase
           .from("cached_offers")
           .select("updated_at")
           .order("updated_at", { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle()
+          .then(({ data: lastSync, error: syncCheckError }) => {
+            // Si la table est vide ou si le cache est ancien (> 15 min), synchroniser
+            const shouldSync = syncCheckError || !lastSync || 
+              (lastSync && new Date(lastSync.updated_at) < new Date(Date.now() - 15 * 60 * 1000));
 
-        const shouldSync = !lastSync || 
-          new Date(lastSync.updated_at) < new Date(Date.now() - 15 * 60 * 1000); // 15 min
-
-        if (shouldSync) {
-          const syncRes = await fetch("/api/offers/sync", { method: "POST" });
-          if (syncRes.ok) {
-            const syncData = await syncRes.json();
-            console.log("Offres et villes synchronisées:", syncData.message);
-          }
-        }
-      } catch (err) {
-        console.error("Erreur lors de la synchronisation:", err);
-        // Ne pas bloquer l'utilisateur si la sync échoue
-      }
+            if (shouldSync) {
+              // Lancer la sync en arrière-plan sans bloquer
+              fetch("/api/offers/sync", { method: "POST" })
+                .then(async (syncRes) => {
+                  if (syncRes.ok) {
+                    const syncData = await syncRes.json();
+                    console.log("Offres et villes synchronisées:", syncData.message);
+                  }
+                })
+                .catch((err) => {
+                  console.error("Erreur lors de la synchronisation:", err);
+                });
+            }
+          })
+          .catch((err) => {
+            console.error("Erreur lors de la vérification du cache:", err);
+          });
+      }, 2000); // Attendre 2 secondes après le chargement
     };
     getUser();
   }, [supabase, router]);
@@ -659,7 +667,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                 ))}
-              </div>
+        </div>
             </CardContent>
           </Card>
         )}

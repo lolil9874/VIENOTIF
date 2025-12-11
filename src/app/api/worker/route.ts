@@ -49,34 +49,39 @@ export async function POST(request: Request) {
   let errors = 0;
 
   // Create job run record
-  const { data: jobRun, error: createError } = await supabase
-    .from("job_runs")
-    .insert({
-      status: "running",
-      processed: 0,
-      new_offers: 0,
-      errors: 0,
-      log: [],
-    })
-    .select()
-    .single();
+  let jobRunId: string | null = null;
+  try {
+    const { data: jobRun, error: createError } = await supabase
+      .from("job_runs")
+      .insert({
+        status: "running",
+        processed: 0,
+        new_offers: 0,
+        errors: 0,
+        log: [],
+      })
+      .select()
+      .single();
 
-  if (createError) {
-    console.error("[Worker] Failed to create job run:", {
-      error: createError,
-      message: createError.message,
-      details: createError.details,
-      hint: createError.hint,
-      code: createError.code,
-    });
-    return NextResponse.json({ 
-      error: "Failed to create job run",
-      details: createError.message,
-      hint: "Check that the job_runs table exists and the Supabase service role key has proper permissions"
-    }, { status: 500 });
+    if (createError) {
+      console.error("[Worker] Failed to create job run:", {
+        error: createError,
+        message: createError.message,
+        details: createError.details,
+        hint: createError.hint,
+        code: createError.code,
+      });
+      
+      // Si l'insertion échoue, continuer quand même mais sans tracking
+      console.warn("[Worker] Continuing without job run tracking");
+    } else {
+      jobRunId = jobRun.id;
+    }
+  } catch (err: any) {
+    console.error("[Worker] Exception creating job run:", err);
+    // Continuer même si le job run ne peut pas être créé
   }
 
-  const jobRunId = jobRun.id;
   logs.push(`[${new Date().toISOString()}] Worker started`);
 
   try {
@@ -186,18 +191,20 @@ export async function POST(request: Request) {
   } catch (error) {
     logs.push(`[${new Date().toISOString()}] Worker failed: ${error}`);
 
-    // Update job run as failed
-    await supabase
-      .from("job_runs")
-      .update({
-        status: "failed",
-        finished_at: new Date().toISOString(),
-        processed,
-        new_offers: newOffers,
-        errors: errors + 1,
-        log: logs,
-      })
-      .eq("id", jobRunId);
+        // Update job run as failed (if it was created)
+        if (jobRunId) {
+          await supabase
+            .from("job_runs")
+            .update({
+              status: "failed",
+              finished_at: new Date().toISOString(),
+              processed,
+              new_offers: newOffers,
+              errors: errors + 1,
+              log: logs,
+            })
+            .eq("id", jobRunId);
+        }
 
     console.error("Worker error:", error);
     return NextResponse.json(
