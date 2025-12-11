@@ -167,6 +167,11 @@ export function Combobox({
                     )}
                   />
                   <span className="truncate">{option.label}</span>
+                  {(option as any).country && (
+                    <span className="ml-2 text-xs text-slate-500 truncate">
+                      {(option as any).country}
+                    </span>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>
