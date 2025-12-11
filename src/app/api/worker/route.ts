@@ -84,9 +84,9 @@ export async function POST(request: Request) {
     logs.push(`[${new Date().toISOString()}] Worker started (no job run tracking)`);
   }
 
-    if (!logs.length) {
-      logs.push(`[${new Date().toISOString()}] Worker started`);
-    }
+  if (!logs.length) {
+    logs.push(`[${new Date().toISOString()}] Worker started`);
+  }
 
     try {
     // Fetch all active subscriptions
