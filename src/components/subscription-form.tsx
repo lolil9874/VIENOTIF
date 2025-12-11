@@ -42,7 +42,6 @@ import {
   COMPANY_SIZES,
 } from "@/lib/types";
 import { COUNTRIES_LIST } from "@/lib/data";
-import { useEffect } from "react";
 
 interface SubscriptionFormProps {
   open: boolean;
