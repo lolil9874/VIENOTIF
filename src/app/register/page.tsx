@@ -56,8 +56,17 @@ export default function RegisterPage() {
         return;
       }
 
-      // Check if email confirmation is required
-      setSuccess(true);
+      // If email confirmation is disabled, redirect directly to login
+      // Otherwise show success message
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // User is already logged in (email confirmation disabled)
+        router.push("/");
+        router.refresh();
+      } else {
+        // Email confirmation required
+        setSuccess(true);
+      }
     } catch {
       setError("Une erreur est survenue");
     } finally {

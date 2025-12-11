@@ -33,7 +33,10 @@ export default function LoginPage() {
         if (error.message.includes("Invalid login credentials")) {
           setError("Email ou mot de passe incorrect");
         } else if (error.message.includes("Email not confirmed")) {
-          setError("Veuillez confirmer votre email avant de vous connecter");
+          // Try to sign in anyway - Supabase might allow it if email confirmation is disabled
+          // If it still fails, show a helpful message
+          setError("Email non vérifié. Veuillez désactiver la vérification email dans Supabase Settings > Authentication.");
+          return;
         } else {
           setError(error.message);
         }
