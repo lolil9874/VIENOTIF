@@ -92,6 +92,44 @@ L'application sera disponible sur [http://localhost:3000](http://localhost:3000)
 4. Pour des vérifications plus fréquentes, utilisez **Uptime Robot** (gratuit et fiable) :
    - Voir la section "Configuration Uptime Robot" ci-dessous
 
+### Configuration Uptime Robot (recommandé pour vérifications fréquentes)
+
+[Uptime Robot](https://uptimerobot.com) est un service gratuit et fiable pour surveiller votre endpoint et déclencher le worker automatiquement.
+
+**Étapes de configuration :**
+
+1. **Créer un compte** sur [uptimerobot.com](https://uptimerobot.com) (gratuit, jusqu'à 50 monitors)
+
+2. **Ajouter un nouveau monitor :**
+   - Cliquez sur "Add New Monitor" (ou "Monitors" > "Add New Monitor")
+   - **Monitor Type** : Sélectionnez "HTTP(s)"
+   - **Friendly Name** : `VIENOTIF Worker`
+   - **URL (or IP)** : `https://votre-app.vercel.app/api/worker`
+     - Remplacez `votre-app.vercel.app` par l'URL de votre déploiement Vercel
+   - **Monitoring Interval** : `5 minutes` (minimum gratuit) ou `15 minutes` (recommandé)
+   - **Alert Contacts** : Configurez votre email (optionnel, pour recevoir des alertes en cas d'erreur)
+
+3. **Configuration avancée (optionnel) :**
+   - **HTTP Method** : `POST` (ou `GET`, les deux fonctionnent)
+   - **Keyword** : `"success"` (pour vérifier que la réponse contient "success" - cela confirme que le worker s'est exécuté correctement)
+
+4. **Sauvegarder** et le monitor commencera à appeler votre endpoint automatiquement
+
+5. **Vérifier que ça fonctionne :**
+   - Attendez quelques minutes
+   - Vérifiez les logs dans Vercel (Deployments > votre déploiement > Functions > `/api/worker`)
+   - Vérifiez dans votre dashboard VIENOTIF que les "Recent Checks" apparaissent
+
+**Avantages :**
+- ✅ Gratuit jusqu'à 50 monitors
+- ✅ Très fiable (99.9% uptime)
+- ✅ Notifications en cas d'erreur
+- ✅ Historique des appels
+- ✅ Interface simple et intuitive
+- ✅ Pas besoin de configuration complexe
+
+**Note :** Si vous n'avez pas encore déployé sur Vercel, l'URL sera quelque chose comme `https://vienotif-xxx.vercel.app/api/worker`. Vous trouverez cette URL après le déploiement dans votre dashboard Vercel.
+
 ### Railway / Render
 
 1. Connectez votre repo GitHub
