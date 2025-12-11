@@ -127,6 +127,13 @@ export async function POST() {
     // Insérer ou mettre à jour dans la base de données
     const cities = Array.from(cityMap.values());
     
+    // Get existing cities to count inserted vs updated
+    const { data: existingCities } = await supabase
+      .from("cached_cities")
+      .select("city_name");
+    
+    const existingCityNames = new Set(existingCities?.map(c => c.city_name) || []);
+    
     // Use upsert for better performance (batch operation)
     const citiesToUpsert = cities.map((city) => ({
       city_name: city.city_name,
@@ -137,29 +144,32 @@ export async function POST() {
       last_seen_at: new Date().toISOString(),
     }));
 
-    // Get existing cities to count inserted vs updated
-    const { data: existingCities } = await supabase
-      .from("cached_cities")
-      .select("city_name");
+    // Upsert all cities in batches of 100 to avoid payload size issues
+    let inserted = 0;
+    let updated = 0;
+    const batchSize = 100;
     
-    const existingCityNames = new Set(existingCities?.map(c => c.city_name) || []);
-    
-    // Upsert all cities
-    const { error: upsertError } = await supabase
-      .from("cached_cities")
-      .upsert(citiesToUpsert, {
-        onConflict: "city_name",
-        ignoreDuplicates: false,
-      });
+    for (let i = 0; i < citiesToUpsert.length; i += batchSize) {
+      const batch = citiesToUpsert.slice(i, i + batchSize);
+      
+      const { error: upsertError } = await supabase
+        .from("cached_cities")
+        .upsert(batch, {
+          onConflict: "city_name",
+          ignoreDuplicates: false,
+        });
 
-    if (upsertError) {
-      console.error("[Cities Sync] Error upserting cities:", upsertError);
-      throw upsertError;
+      if (upsertError) {
+        console.error(`[Cities Sync] Error upserting cities batch ${i}-${i + batch.length}:`, upsertError);
+        // Continue with next batch instead of throwing
+      } else {
+        // Count inserted vs updated for this batch
+        const batchInserted = batch.filter(c => !existingCityNames.has(c.city_name)).length;
+        const batchUpdated = batch.filter(c => existingCityNames.has(c.city_name)).length;
+        inserted += batchInserted;
+        updated += batchUpdated;
+      }
     }
-
-    // Count inserted vs updated
-    const inserted = cities.filter(c => !existingCityNames.has(c.city_name)).length;
-    const updated = cities.filter(c => existingCityNames.has(c.city_name)).length;
 
     console.log(`[Cities Sync] Inserted: ${inserted}, Updated: ${updated}`);
 
