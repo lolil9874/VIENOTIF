@@ -17,6 +17,21 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+
+  // Listen for auth state changes to auto-redirect when signed in
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session?.user?.email);
+      if (event === "SIGNED_IN" && session) {
+        router.push("/");
+        router.refresh();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase, router]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
