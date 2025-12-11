@@ -41,7 +41,8 @@ import {
   STUDY_LEVELS,
   COMPANY_SIZES,
 } from "@/lib/types";
-import { COUNTRIES_LIST, CITIES_LIST } from "@/lib/data";
+import { COUNTRIES_LIST } from "@/lib/data";
+import { useEffect } from "react";
 
 interface SubscriptionFormProps {
   open: boolean;
@@ -70,6 +71,8 @@ export function SubscriptionForm({
 }: SubscriptionFormProps) {
   const [loading, setLoading] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [citiesList, setCitiesList] = useState<{ value: string; label: string; country: string }[]>([]);
+  const [loadingCities, setLoadingCities] = useState(false);
 
   // Basic fields
   const [label, setLabel] = useState(initialData?.label || "");
@@ -87,6 +90,32 @@ export function SubscriptionForm({
   const [citySearch, setCitySearch] = useState(
     initialData?.filters?.citySearch || ""
   );
+
+  // Charger les villes depuis l'API au montage du composant
+  useEffect(() => {
+    const loadCities = async () => {
+      setLoadingCities(true);
+      try {
+        const res = await fetch("/api/cities");
+        if (res.ok) {
+          const cities = await res.json();
+          setCitiesList(cities.map((city: any) => ({
+            value: city.value || city.city_name || city.name,
+            label: city.label || city.city_name_en || city.city_name || city.name,
+            country: city.country || city.country_name || "",
+          })));
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des villes:", error);
+      } finally {
+        setLoadingCities(false);
+      }
+    };
+
+    if (open) {
+      loadCities();
+    }
+  }, [open]);
   const [selectedZones, setSelectedZones] = useState<string[]>(
     initialData?.filters?.geographicZones || []
   );
@@ -288,21 +317,31 @@ export function SubscriptionForm({
           {/* Cities - Dropdown */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">📍 Villes</Label>
-            <Combobox
-              options={CITIES_LIST}
-              selected={selectedCities}
-              onChange={setSelectedCities}
-              placeholder="Sélectionner des villes..."
-              searchPlaceholder="Rechercher une ville..."
-              emptyText="Aucune ville trouvée"
-            />
+            {loadingCities ? (
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Chargement des villes...
+              </div>
+            ) : (
+              <Combobox
+                options={citiesList}
+                selected={selectedCities}
+                onChange={setSelectedCities}
+                placeholder="Sélectionner des villes..."
+                searchPlaceholder="Rechercher une ville (ex: Palm Beach, Paris, New York)..."
+                emptyText="Aucune ville trouvée"
+                allowCustom={true}
+              />
+            )}
             <p className="text-xs text-slate-500">
-              Ou tapez une ville manuellement :
+              {citiesList.length > 0 
+                ? `${citiesList.length} villes disponibles. Vous pouvez aussi taper une ville manuellement.`
+                : "Tapez une ville manuellement ou synchronisez les villes depuis l'API."}
             </p>
             <Input
               value={citySearch}
               onChange={(e) => setCitySearch(e.target.value)}
-              placeholder="Ex: Salt Lake City, Nice..."
+              placeholder="Ex: Palm Beach, Salt Lake City, Nice..."
               className="h-10"
             />
           </div>

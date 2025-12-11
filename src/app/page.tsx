@@ -85,6 +85,18 @@ export default function Dashboard() {
         return;
       }
       setUserEmail(user?.email || null);
+      
+      // Synchroniser les villes automatiquement à chaque connexion
+      try {
+        const syncRes = await fetch("/api/cities/sync", { method: "POST" });
+        if (syncRes.ok) {
+          const syncData = await syncRes.json();
+          console.log("Villes synchronisées:", syncData.message);
+        }
+      } catch (err) {
+        console.error("Erreur lors de la synchronisation des villes:", err);
+        // Ne pas bloquer l'utilisateur si la sync échoue
+      }
     };
     getUser();
   }, [supabase, router]);
