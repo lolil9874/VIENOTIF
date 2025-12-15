@@ -18,13 +18,10 @@ const nextConfig = {
       },
     ];
   },
-  // Exclude Supabase Edge Functions from build
-  webpack: (config, { isServer }) => {
-    config.watchOptions = {
-      ...config.watchOptions,
-      ignored: ['**/supabase/functions/**'],
-    };
-    return config;
+  // Turbopack configuration
+  turbopack: {
+    // Exclude Supabase Edge Functions from build
+    resolveAlias: {},
   },
 };
 
