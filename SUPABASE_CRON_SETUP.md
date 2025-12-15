@@ -68,14 +68,37 @@ LIMIT 10;
 
 ## 🔄 Modifier le Schedule
 
-Pour changer l'heure d'exécution :
+### Option 1 : Via l'éditeur SQL Supabase (Recommandé)
+
+Pour changer l'heure d'exécution, connectez-vous au Dashboard Supabase > SQL Editor et exécutez :
+
+```sql
+-- Pour toutes les 5 minutes
+UPDATE cron.job
+SET schedule = '*/5 * * * *'
+WHERE jobname = 'vienotif-worker-daily';
+
+-- Pour une fois par heure
+UPDATE cron.job
+SET schedule = '0 * * * *'
+WHERE jobname = 'vienotif-worker-daily';
+
+-- Pour une fois par jour à 9h UTC
+UPDATE cron.job
+SET schedule = '0 9 * * *'
+WHERE jobname = 'vienotif-worker-daily';
+```
+
+### Option 2 : Via la fonction cron.alter_job
 
 ```sql
 SELECT cron.alter_job(
   job_id := (SELECT jobid FROM cron.job WHERE jobname = 'vienotif-worker-daily'),
-  schedule := '0 10 * * *'  -- Nouvelle heure (10h00 UTC)
+  schedule := '*/5 * * * *'  -- Toutes les 5 minutes
 );
 ```
+
+**Note :** Le fichier `supabase/migrations/update_cron_schedule.sql` contient le SQL pour modifier le cron à toutes les 5 minutes.
 
 ## ⚠️ Important
 
