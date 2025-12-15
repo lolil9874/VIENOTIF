@@ -27,11 +27,25 @@ export async function POST(request: Request) {
     }
 
     // Récupérer les paramètres utilisateur
-    const { data: userSettings } = await supabase
+    const { data: userSettings, error: settingsError } = await supabase
       .from("user_settings")
       .select("*")
       .eq("user_id", user.id)
       .single();
+
+    if (settingsError && settingsError.code !== 'PGRST116') {
+      console.error("[Test Notification] Error fetching user settings:", settingsError);
+      // Continue anyway, userSettings will be null/undefined
+    }
+
+    // Log pour debug
+    console.log("[Test Notification] User settings:", {
+      hasSettings: !!userSettings,
+      hasTelegramToken: !!userSettings?.telegram_bot_token,
+      telegramTokenLength: userSettings?.telegram_bot_token?.length || 0,
+      userId: user.id,
+      settingsError: settingsError?.message,
+    });
 
     // Créer une offre de test
     const testOffer: VIEOffer = {

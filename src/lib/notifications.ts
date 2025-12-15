@@ -37,10 +37,11 @@ async function sendTelegramNotification(
   payload: NotificationPayload,
   botToken?: string | null
 ): Promise<void> {
+  // Utiliser le token du paramètre, puis celui des variables d'environnement
   const token = botToken || process.env.TELEGRAM_BOT_TOKEN;
   
   if (!token) {
-    throw new Error("Telegram bot token not configured");
+    throw new Error("Telegram bot token not configured. Please set it in your settings or environment variables.");
   }
 
   const message = formatOfferForNotification(payload.offer);
