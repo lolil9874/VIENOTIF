@@ -22,6 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Combobox } from "@/components/ui/combobox";
 import { CitySearch } from "@/components/ui/city-search";
+import { CountrySearch } from "@/components/ui/country-search";
 import {
   Loader2,
   MessageSquare,
@@ -73,6 +74,8 @@ export function SubscriptionForm({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [citiesList, setCitiesList] = useState<{ value: string; label: string; country: string }[]>([]);
   const [loadingCities, setLoadingCities] = useState(false);
+  const [countriesList, setCountriesList] = useState<{ value: string; label: string; count?: number }[]>([]);
+  const [loadingCountries, setLoadingCountries] = useState(false);
 
   // Basic fields
   const [label, setLabel] = useState(initialData?.label || "");
@@ -99,14 +102,23 @@ export function SubscriptionForm({
         const res = await fetch("/api/cities");
         if (res.ok) {
           const cities = await res.json();
-          setCitiesList(cities.map((city: any) => ({
-            value: city.value || city.city_name || city.name,
-            label: city.label || city.city_name_en || city.city_name || city.name,
-            country: city.country || city.country_name || "",
-          })));
+          if (Array.isArray(cities) && cities.length > 0) {
+            setCitiesList(cities.map((city: any) => ({
+              value: city.value || city.city_name || city.name,
+              label: city.label || city.city_name_en || city.city_name || city.name,
+              country: city.country || city.country_name || "",
+            })));
+          } else {
+            console.warn("[Cities] No cities returned from API");
+            setCitiesList([]);
+          }
+        } else {
+          console.error("[Cities] API returned error:", res.status, res.statusText);
+          setCitiesList([]);
         }
       } catch (error) {
         console.error("Erreur lors du chargement des villes:", error);
+        setCitiesList([]);
       } finally {
         setLoadingCities(false);
       }
@@ -114,6 +126,37 @@ export function SubscriptionForm({
 
     if (open) {
       loadCities();
+    }
+  }, [open]);
+
+  // Charger les pays depuis l'API au montage du composant
+  useEffect(() => {
+    const loadCountries = async () => {
+      setLoadingCountries(true);
+      try {
+        const res = await fetch("/api/countries");
+        if (res.ok) {
+          const countries = await res.json();
+          if (Array.isArray(countries) && countries.length > 0) {
+            setCountriesList(countries);
+          } else {
+            console.warn("[Countries] No countries returned from API");
+            setCountriesList([]);
+          }
+        } else {
+          console.error("[Countries] API returned error:", res.status, res.statusText);
+          setCountriesList([]);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des pays:", error);
+        setCountriesList([]);
+      } finally {
+        setLoadingCountries(false);
+      }
+    };
+
+    if (open) {
+      loadCountries();
     }
   }, [open]);
   const [selectedZones, setSelectedZones] = useState<string[]>(
@@ -301,17 +344,30 @@ export function SubscriptionForm({
             />
           </div>
 
-          {/* Countries - Dropdown */}
+          {/* Countries - Search */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">🌍 Pays</Label>
-            <Combobox
-              options={COUNTRIES_LIST}
-              selected={selectedCountries}
-              onChange={setSelectedCountries}
-              placeholder="Sélectionner des pays..."
-              searchPlaceholder="Rechercher un pays..."
-              emptyText="Aucun pays trouvé"
-            />
+            <div className="relative">
+              <CountrySearch
+                countries={countriesList}
+                selected={selectedCountries}
+                onChange={setSelectedCountries}
+                placeholder={loadingCountries ? "Chargement des pays..." : "Rechercher un pays (ex: USA, États-Unis, United States, US)..."}
+                loading={loadingCountries}
+              />
+              {loadingCountries && (
+                <div className="absolute top-2 right-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-slate-500">
+              {loadingCountries 
+                ? "Chargement des pays..."
+                : countriesList.length > 0 
+                  ? `${countriesList.length} pays disponibles. Recherchez par nom (ex: "USA", "États-Unis") ou code (ex: "US").`
+                  : "Aucun pays disponible. Synchronisez d'abord les villes via l'API /api/cities/sync"}
+            </p>
           </div>
 
           {/* Cities - Single Search Box */}
@@ -332,9 +388,11 @@ export function SubscriptionForm({
               />
             )}
             <p className="text-xs text-slate-500">
-              {citiesList.length > 0 
-                ? `${citiesList.length} villes disponibles. Tapez pour rechercher et sélectionner.`
-                : "Synchronisation des villes en cours..."}
+              {loadingCities 
+                ? "Chargement des villes..."
+                : citiesList.length > 0 
+                  ? `${citiesList.length} villes disponibles. Tapez pour rechercher et sélectionner.`
+                  : "Aucune ville disponible. Synchronisez d'abord les villes via l'API /api/cities/sync"}
             </p>
           </div>
 

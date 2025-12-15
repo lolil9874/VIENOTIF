@@ -63,8 +63,23 @@ export default function RegisterPage() {
 
       if (error) {
         console.error("SignUp error:", error);
+        
+        // Check for network/DNS errors
+        if (error.message.includes("Failed to fetch") || 
+            error.message.includes("ERR_NAME_NOT_RESOLVED") ||
+            error.message.includes("NetworkError") ||
+            error.name === "AuthApiError" && error.status === undefined) {
+          setError(
+            "Erreur de connexion: Impossible de joindre le serveur d'authentification. " +
+            "Vérifiez votre connexion internet ou contactez le support si le problème persiste."
+          );
+          return;
+        }
+        
         if (error.message.includes("already registered") || error.message.includes("User already registered")) {
           setError("Cet email est déjà utilisé. Essayez de vous connecter.");
+        } else if (error.message.includes("Invalid API key") || error.message.includes("Invalid credentials")) {
+          setError("Erreur de configuration: Clé API invalide. Contactez le support.");
         } else {
           setError(error.message || "Erreur lors de l'inscription");
         }
@@ -112,9 +127,13 @@ export default function RegisterPage() {
       } else {
         setError("Erreur : compte non créé. Réessayez.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Registration exception:", err);
-      setError("Une erreur est survenue lors de l'inscription");
+      if (err?.message?.includes("NEXT_PUBLIC_SUPABASE_URL") || err?.message?.includes("not defined")) {
+        setError("Erreur de configuration: Variables d'environnement manquantes. Contactez le support.");
+      } else {
+        setError("Une erreur est survenue lors de l'inscription: " + (err?.message || "Erreur inconnue"));
+      }
     } finally {
       setLoading(false);
     }

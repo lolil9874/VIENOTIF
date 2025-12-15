@@ -1,52 +1,51 @@
 "use client";
 
 import * as React from "react";
-import { Check, X, Loader2 } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { normalizeText } from "@/lib/fuzzy-search";
 
-interface City {
-  value: string;
-  label: string;
-  country?: string;
+interface Country {
+  value: string; // country_id (ex: "US")
+  label: string; // country_name (ex: "United States" ou "États-Unis")
+  count?: number; // nombre de villes/offres
 }
 
-interface CitySearchProps {
-  cities: City[];
+interface CountrySearchProps {
+  countries: Country[];
   selected: string[];
   onChange: (values: string[]) => void;
   placeholder?: string;
   loading?: boolean;
 }
 
-export function CitySearch({
-  cities,
+export function CountrySearch({
+  countries,
   selected,
   onChange,
-  placeholder = "Rechercher une ville (ex: Palm Beach, Paris, New York)...",
+  placeholder = "Rechercher un pays (ex: USA, États-Unis, United States)...",
   loading = false,
-}: CitySearchProps) {
+}: CountrySearchProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isOpen, setIsOpen] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
-  // Filter cities based on search query with scoring
-  const filteredCities = React.useMemo(() => {
+  // Filter countries based on search query with scoring
+  const filteredCountries = React.useMemo(() => {
     if (!searchQuery.trim()) {
-      return cities.slice(0, 20); // Show top 20 when no search
+      return countries.slice(0, 20); // Show top 20 when no search
     }
 
     const normalizedQuery = normalizeText(searchQuery);
     const queryWords = normalizedQuery.split(/\s+/).filter(w => w.length > 0);
     
-    return cities
-      .map((city) => {
-        const normalizedLabel = normalizeText(city.label);
-        const normalizedValue = normalizeText(city.value);
-        const country = city.country ? normalizeText(city.country) : "";
+    return countries
+      .map((country) => {
+        const normalizedLabel = normalizeText(country.label);
+        const normalizedValue = normalizeText(country.value);
         
         let score = 0;
         
@@ -62,18 +61,17 @@ export function CitySearch({
         else if (queryWords.length > 0 && queryWords.every(word => 
           normalizedLabel.includes(word) || 
           normalizedValue.includes(word) ||
-          city.label.toLowerCase().includes(word) ||
-          city.value.toLowerCase().includes(word)
+          country.label.toLowerCase().includes(word) ||
+          country.value.toLowerCase().includes(word)
         )) {
           score = 60;
         }
         // Contains at least one word
         else if (queryWords.some(word => 
           normalizedLabel.includes(word) || 
-          normalizedValue.includes(word) || 
-          country.includes(word) ||
-          city.label.toLowerCase().includes(word) ||
-          city.value.toLowerCase().includes(word)
+          normalizedValue.includes(word) ||
+          country.label.toLowerCase().includes(word) ||
+          country.value.toLowerCase().includes(word)
         )) {
           score = 40;
         }
@@ -81,13 +79,13 @@ export function CitySearch({
         else if (
           normalizedLabel.includes(normalizedQuery) || 
           normalizedValue.includes(normalizedQuery) ||
-          city.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          city.value.toLowerCase().includes(searchQuery.toLowerCase())
+          country.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          country.value.toLowerCase().includes(searchQuery.toLowerCase())
         ) {
           score = 30;
         }
         
-        return { city, score };
+        return { country, score };
       })
       .filter(({ score }) => score > 0)
       .sort((a, b) => {
@@ -96,15 +94,15 @@ export function CitySearch({
           return b.score - a.score;
         }
         // Then by label length (shorter first)
-        return a.city.label.length - b.city.label.length;
+        return a.country.label.length - b.country.label.length;
       })
       .slice(0, 10) // Limit to top 10 results
-      .map(({ city }) => city);
-  }, [cities, searchQuery]);
+      .map(({ country }) => country);
+  }, [countries, searchQuery]);
 
-  const handleSelect = (city: City) => {
-    if (!selected.includes(city.value)) {
-      onChange([...selected, city.value]);
+  const handleSelect = (country: Country) => {
+    if (!selected.includes(country.value)) {
+      onChange([...selected, country.value]);
     }
     setSearchQuery("");
     setIsOpen(false);
@@ -116,9 +114,9 @@ export function CitySearch({
     onChange(selected.filter((v) => v !== value));
   };
 
-  const getCityLabel = (value: string) => {
-    const city = cities.find((c) => c.value === value);
-    return city ? city.label : value;
+  const getCountryLabel = (value: string) => {
+    const country = countries.find((c) => c.value === value);
+    return country ? country.label : value;
   };
 
   // Close dropdown when clicking outside
@@ -135,9 +133,9 @@ export function CitySearch({
 
   return (
     <div ref={containerRef} className="relative w-full">
-      {/* Input with selected cities as badges */}
+      {/* Input with selected countries as badges */}
       <div className="relative">
-        <div className="flex flex-wrap gap-1.5 items-center min-h-[44px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+        <div className={`flex flex-wrap gap-1.5 items-center min-h-[44px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${loading ? 'opacity-60 cursor-wait' : ''}`}>
           {selected.length > 0 && (
             <div className="flex flex-wrap gap-1.5 flex-1">
               {selected.map((value) => (
@@ -146,7 +144,7 @@ export function CitySearch({
                   variant="secondary"
                   className="text-xs"
                 >
-                  {getCityLabel(value)}
+                  {getCountryLabel(value)}
                   <button
                     type="button"
                     className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -171,26 +169,25 @@ export function CitySearch({
               setIsOpen(true);
             }}
             onFocus={() => setIsOpen(true)}
-            placeholder={selected.length === 0 ? placeholder : "Ajouter une autre ville..."}
-            className="flex-1 min-w-[120px] border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+            placeholder={selected.length === 0 ? placeholder : "Ajouter un autre pays..."}
+            className="flex-1 min-w-[120px] border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto bg-transparent"
+            disabled={loading && countries.length === 0}
+            readOnly={loading && countries.length === 0}
           />
-          {loading && (
-            <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-          )}
         </div>
       </div>
 
       {/* Dropdown with suggestions */}
       {isOpen && searchQuery.trim().length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-[300px] overflow-auto">
-          {filteredCities.length > 0 ? (
+          {filteredCountries.length > 0 ? (
             <div className="p-1">
-              {filteredCities.map((city) => {
-                const isSelected = selected.includes(city.value);
+              {filteredCountries.map((country) => {
+                const isSelected = selected.includes(country.value);
                 return (
                   <div
-                    key={city.value}
-                    onClick={() => handleSelect(city)}
+                    key={country.value}
+                    onClick={() => handleSelect(country)}
                     className={cn(
                       "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
                       isSelected && "bg-accent"
@@ -202,10 +199,10 @@ export function CitySearch({
                         isSelected ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    <span className="flex-1">{city.label}</span>
-                    {city.country && (
+                    <span className="flex-1">{country.label}</span>
+                    {country.count !== undefined && (
                       <span className="text-xs text-slate-500 ml-2">
-                        {city.country}
+                        ({country.count} villes)
                       </span>
                     )}
                   </div>
@@ -214,27 +211,27 @@ export function CitySearch({
             </div>
           ) : (
             <div className="p-4 text-center text-sm text-slate-500">
-              {cities.length === 0 
-                ? "Aucune ville chargée. Vérifiez que la synchronisation a été effectuée."
-                : `Aucune ville trouvée pour "${searchQuery}". Vous pouvez taper la ville manuellement.`}
+              {countries.length === 0 
+                ? "Aucun pays chargé. Vérifiez que la synchronisation a été effectuée."
+                : `Aucun pays trouvé pour "${searchQuery}". Vous pouvez taper le code pays (ex: US, FR, GB).`}
             </div>
           )}
         </div>
       )}
 
-      {/* Show recent/popular cities when no search */}
-      {isOpen && !searchQuery.trim() && cities.length > 0 && (
+      {/* Show popular countries when no search */}
+      {isOpen && !searchQuery.trim() && countries.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-[300px] overflow-auto">
           <div className="p-2 text-xs text-slate-500 font-medium">
-            Villes populaires
+            Pays disponibles
           </div>
           <div className="p-1">
-            {cities.slice(0, 10).map((city) => {
-              const isSelected = selected.includes(city.value);
+            {countries.slice(0, 10).map((country) => {
+              const isSelected = selected.includes(country.value);
               return (
                 <div
-                  key={city.value}
-                  onClick={() => handleSelect(city)}
+                  key={country.value}
+                  onClick={() => handleSelect(country)}
                   className={cn(
                     "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
                     isSelected && "bg-accent"
@@ -246,10 +243,10 @@ export function CitySearch({
                       isSelected ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  <span className="flex-1">{city.label}</span>
-                  {city.country && (
+                  <span className="flex-1">{country.label}</span>
+                  {country.count !== undefined && (
                     <span className="text-xs text-slate-500 ml-2">
-                      {city.country}
+                      ({country.count} villes)
                     </span>
                   )}
                 </div>

@@ -37,12 +37,26 @@ export default function LoginPage() {
           name: error.name
         });
         
+        // Check for network/DNS errors
+        if (error.message.includes("Failed to fetch") || 
+            error.message.includes("ERR_NAME_NOT_RESOLVED") ||
+            error.message.includes("NetworkError") ||
+            error.name === "AuthApiError" && error.status === undefined) {
+          setError(
+            "Erreur de connexion: Impossible de joindre le serveur d'authentification. " +
+            "Vérifiez votre connexion internet ou contactez le support si le problème persiste."
+          );
+          return;
+        }
+        
         if (error.message.includes("Invalid login credentials") || error.message.includes("Invalid credentials")) {
           setError("Email ou mot de passe incorrect. Vérifiez vos identifiants.");
         } else if (error.message.includes("Email not confirmed") || error.message.includes("email_not_confirmed")) {
           setError("Email non vérifié. Vérifiez votre boîte mail ou désactivez la vérification email dans Supabase Settings > Authentication.");
         } else if (error.message.includes("User not found") || error.message.includes("user_not_found")) {
           setError("Aucun compte trouvé avec cet email. Créez un compte d'abord.");
+        } else if (error.message.includes("Invalid API key")) {
+          setError("Erreur de configuration: Clé API invalide. Contactez le support.");
         } else {
           setError(error.message || "Erreur de connexion. Vérifiez vos identifiants.");
         }
@@ -58,9 +72,13 @@ export default function LoginPage() {
         console.error("Login succeeded but no session");
         setError("Connexion réussie mais session non créée. Réessayez.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Login exception:", err);
-      setError("Une erreur est survenue lors de la connexion");
+      if (err?.message?.includes("NEXT_PUBLIC_SUPABASE_URL") || err?.message?.includes("not defined")) {
+        setError("Erreur de configuration: Variables d'environnement manquantes. Contactez le support.");
+      } else {
+        setError("Une erreur est survenue lors de la connexion: " + (err?.message || "Erreur inconnue"));
+      }
     } finally {
       setLoading(false);
     }
