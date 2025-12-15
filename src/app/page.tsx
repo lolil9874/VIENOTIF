@@ -450,7 +450,30 @@ export default function Dashboard() {
                   <p className="text-sm text-slate-400">Dernière vérif.</p>
                   <p className="text-lg font-semibold text-white">
                     {lastRun
-                      ? new Date(lastRun.started_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+                      ? (() => {
+                          const date = new Date(lastRun.started_at);
+                          const now = new Date();
+                          const diffMs = now.getTime() - date.getTime();
+                          const diffMins = Math.floor(diffMs / 60000);
+                          const diffHours = Math.floor(diffMs / 3600000);
+                          const diffDays = Math.floor(diffMs / 86400000);
+                          
+                          // Si moins de 1 heure : afficher les minutes
+                          if (diffMins < 60) {
+                            return `Il y a ${diffMins} min`;
+                          }
+                          // Si moins de 24h : afficher les heures
+                          if (diffHours < 24) {
+                            return `Il y a ${diffHours}h`;
+                          }
+                          // Sinon : afficher la date et l'heure
+                          return date.toLocaleString("fr-FR", { 
+                            day: "2-digit", 
+                            month: "2-digit", 
+                            hour: "2-digit", 
+                            minute: "2-digit" 
+                          });
+                        })()
                       : "Jamais"}
                   </p>
                 </div>

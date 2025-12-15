@@ -170,7 +170,7 @@ export function CountrySearch({
             }}
             onFocus={() => setIsOpen(true)}
             placeholder={selected.length === 0 ? placeholder : "Ajouter un autre pays..."}
-            className="flex-1 min-w-[120px] border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto bg-transparent"
+            className="flex-1 min-w-[120px] border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto bg-background"
             disabled={loading && countries.length === 0}
             readOnly={loading && countries.length === 0}
           />
